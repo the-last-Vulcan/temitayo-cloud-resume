@@ -1,4 +1,5 @@
 import functions_framework
+import json
 from google.cloud import firestore
 
 # Initialize Firestore client globally to reuse across invocations
@@ -43,10 +44,10 @@ def count_visitors(request):
             doc_ref.set({"count": new_count})
 
         # Return the new visitor count as a string with HTTP 200 OK and CORS headers
-        return (f"Visitor count is now: {new_count}", 200, headers)
+        return (json.dumps({"count": new_count}), 200, headers)
 
     except Exception as e:
         # Log the error for debugging purposes in Cloud Logging
         print(f"An error occurred: {str(e)}")
         # Return an error message to the frontend with HTTP 500 Internal Server Error and CORS headers
-        return (f"An error occurred: {str(e)}", 500, headers)
+        return (json.dumps({"error": str(e)}), 500, headers)
