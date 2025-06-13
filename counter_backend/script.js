@@ -2,7 +2,7 @@ async function updateVisitorCount() {
       const counterElement = document.getElementById("visitor-count");
   
       try {
-        const response = await fetch("https://visitor-counter-454149918840.us-central1.run.app");
+        const response = await fetch("https://visitor-counter-7fsg6cnsoa-uc.a.run.app");
         const text = await response.text();
         counterElement.textContent = text;
       } catch (error) {
