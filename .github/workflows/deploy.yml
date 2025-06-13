@@ -61,18 +61,18 @@ jobs:
 
       - name: Sync HTML Resume (Frontend) to GCS
         run: |
-          gcloud storage rsync . gs://${{ env.GCS_BUCKET_NAME }} \
-            --exclude-unmatched-urls \
-            --recursive \
-            --content-type 'text/html' .html \
-            --content-type 'text/css' .css \
-            --content-type 'application/javascript' .js \
-            --content-type 'image/jpeg' .jpeg \
-            --content-type 'image/png' .png \
-            --content-type 'image/gif' .gif \
-            --content-type 'image/svg+xml' .svg \
-            --content-type 'application/font-woff' .woff \
-            --content-type 'application/font-woff2' .woff2 \
-            --content-type 'application/font-ttf' .ttf
+          gcloud storage rsync . gs://www.temitayoapata.online \
+            --recursive \ # Important: Recursively sync the directory
+            --include="*.html" \
+            --include="*.css" \
+            --include="*.js" \
+            --include="*.jpeg" \
+            --include="*.png" \
+            --include="*.gif" \
+            --include="*.svg" \
+            --include="*.woff" \
+            --include="*.woff2" \
+            --include="*.ttf" \
+            --exclude="*" # Exclude everything else that doesn't match the includes
         # Make sure the dot '.' after rsync refers to the root of your repo
         # because your frontend files (index.html, style.css, script.js) are there.
