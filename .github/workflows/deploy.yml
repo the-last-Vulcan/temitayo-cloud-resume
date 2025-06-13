@@ -61,16 +61,4 @@ jobs:
 
       - name: Sync HTML Resume (Frontend) to GCS
         run: |
-          gcloud storage rsync . gs://www.temitayoapata.online \
-            --recursive \
-            --include "*.html" \ # CORRECTED: space instead of =
-            --include "*.css" \
-            --include "*.js" \
-            --include "*.jpeg" \
-            --include "*.png" \
-            --include "*.gif" \
-            --include "*.svg" \
-            --include "*.woff" \
-            --include "*.woff2" \
-            --include "*.ttf" \
-            --exclude "*" # CORRECTED: space instead of =
+          gcloud storage rsync . gs://www.temitayoapata.online --recursive --include "*.html" --include "*.css" --include "*.js" --include "*.jpeg" --include "*.png" --include "*.gif" --include "*.svg" --include "*.woff" --include "*.woff2" --include "*.ttf" --exclude "*"
