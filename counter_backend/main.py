@@ -3,7 +3,6 @@ from google.cloud import firestore
 
 # Initialize Firestore client globally to reuse across invocations
 # This is a best practice for Cloud Functions.
-db = firestore.Client()
 
 @functions_framework.http
 def count_visitors(request):
@@ -11,7 +10,7 @@ def count_visitors(request):
     HTTP Cloud Function to count website visitors using Firestore.
     Each call increments the counter in the 'views' collection.
     """
-
+    db = firestore.Client()
     # Set CORS headers for preflight and actual requests
     # Adjust 'Access-Control-Allow-Origin' to your specific resume domain (e.g., 'https://yourdomain.com')
     # Using '*' allows any origin, which is fine for a challenge but less secure for production.
