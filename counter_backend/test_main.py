@@ -14,7 +14,7 @@ def mock_firestore_db():
         yield mock_db
 
 # Test case for OPTIONS (preflight) request
-def test_count_visitors_options_request():
+def test_count_visitors_options_request(mock_firestore_db):
     mock_request = MagicMock()
     mock_request.method = 'OPTIONS'
     # For OPTIONS, the request body/args aren't usually relevant
