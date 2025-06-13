@@ -62,7 +62,7 @@ jobs:
       - name: Sync HTML Resume (Frontend) to GCS
         run: |
           gcloud storage rsync . gs://www.temitayoapata.online \
-            --recursive \ # Important: Recursively sync the directory
+            --recursive \
             --include="*.html" \
             --include="*.css" \
             --include="*.js" \
@@ -73,6 +73,4 @@ jobs:
             --include="*.woff" \
             --include="*.woff2" \
             --include="*.ttf" \
-            --exclude="*" # Exclude everything else that doesn't match the includes
-        # Make sure the dot '.' after rsync refers to the root of your repo
-        # because your frontend files (index.html, style.css, script.js) are there.
+            --exclude="*"
