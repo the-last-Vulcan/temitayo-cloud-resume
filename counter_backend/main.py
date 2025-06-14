@@ -1,37 +1,36 @@
-import functions_framework
 import json
+import os
 from google.cloud import firestore
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
-# Initialize Firestore client globally to reuse across invocations
-# This is a best practice for Cloud Functions.
+# Initialize Flask app
+app = Flask(__name__)
 
-@functions_framework.http
-def count_visitors(request):
+# Configure CORS for your Flask app.
+# IMPORTANT: For production, replace "*" with your specific resume domain (e.g., 'https://www.temitayoapata.online')
+# Using "*" allows any origin, which is suitable for a challenge/development.
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+# Initialize Firestore client globally to reuse across invocations.
+# This is a best practice for serverless environments like Cloud Run.
+db = firestore.Client()
+
+@app.route('/', methods=['GET', 'POST', 'OPTIONS'])
+def count_visitors():
     """
-    HTTP Cloud Function to count website visitors using Firestore.
+    HTTP Flask endpoint to count website visitors using Firestore.
     Each call increments the counter in the 'views' collection.
+    Handles GET, POST, and OPTIONS (preflight) requests.
     """
-    db = firestore.Client()
-    # Set CORS headers for preflight and actual requests
-    # Adjust 'Access-Control-Allow-Origin' to your specific resume domain (e.g., 'https://yourdomain.com')
-    # Using '*' allows any origin, which is fine for a challenge but less secure for production.
-    headers = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Max-Age': '3600' # Cache preflight response for 1 hour
-    }
-
-    # Handle preflight OPTIONS request
-    if request.method == 'OPTIONS':
-        # Respond to preflight request with CORS headers and 204 No Content
-        return ('', 204, headers)
+    # Flask-CORS extension handles the OPTIONS preflight request automatically.
+    # We no longer need the explicit 'if request.method == 'OPTIONS':' block here.
 
     doc_ref = db.collection('views').document('counter')
-    new_count = 0 # Initialize new_count outside the try block
+    new_count = 0 # Initialize new_count for scope
 
     try:
-        # Read existing count
+        # Get the current count from Firestore
         doc = doc_ref.get()
         if doc.exists:
             current_count = doc.to_dict().get("count", 0)
@@ -43,11 +42,23 @@ def count_visitors(request):
             new_count = 1
             doc_ref.set({"count": new_count})
 
-        # Return the new visitor count as a string with HTTP 200 OK and CORS headers
-        return (json.dumps({"count": new_count}), 200, headers)
+        # Return the new visitor count as JSON with HTTP 200 OK.
+        # jsonify automatically sets 'Content-Type: application/json'.
+        return jsonify({"count": new_count}), 200
 
     except Exception as e:
-        # Log the error for debugging purposes in Cloud Logging
+        # Log the error for debugging purposes (visible in Cloud Logging)
         print(f"An error occurred: {str(e)}")
-        # Return an error message to the frontend with HTTP 500 Internal Server Error and CORS headers
-        return (json.dumps({"error": str(e)}), 500, headers)
+        # Return an error message to the frontend with HTTP 500 Internal Server Error
+        return jsonify({"error": "Failed to update visitor count"}), 500 # More generic error for frontend
+
+
+# This block is crucial for running the Flask application as a web server.
+# Cloud Run expects your application to listen on the port specified by the PORT environment variable,
+# which defaults to 8080 if not explicitly set.
+if __name__ == '__main__':
+    # Get the port from the environment variable or default to 8080
+    port = int(os.environ.get("PORT", 8080))
+    # Run the Flask app on all available network interfaces (0.0.0.0)
+    # debug=False is important for production/Cloud Run environments.
+    app.run(debug=False, host="0.0.0.0", port=port)
