@@ -124,3 +124,5 @@ resource "google_project_service" "artifact_registry_api" {
   service = "artifactregistry.googleapis.com"
   disable_on_destroy = false
 }
+
+
