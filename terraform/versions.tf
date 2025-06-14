@@ -8,7 +8,7 @@ terraform {
   required_version = ">= 1.1.0" # Or your preferred Terraform version
   backend "gcs" {
     # This must match your GCS bucket for state
-    bucket = "eng-diagram-435207-s6_terraform_state" # Replace with your actual state bucket name
+    bucket = "eng-diagram-435207-s6-tfstate" # Replace with your actual state bucket name
     prefix = "terraform/state"
   }
 }
