@@ -6,10 +6,10 @@ on:
       - main # Or 'master' if that's your main branch
 
 env:
-  GCP_PROJECT_ID: eng-diagram-435207-s6            # <-- REPLACE THIS
-  GCP_REGION: us-central1                   # <-- REPLACE THIS (e.g., us-central1)
-  CLOUD_RUN_SERVICE_NAME: visitor-counter # <-- REPLACE THIS (e.g., visitor-counter)
-  GCS_BUCKET_NAME: www.temitayoapata.online      # <-- REPLACE THIS
+  GCP_PROJECT_ID: eng-diagram-435207-s6               # Your GCP Project ID
+  GCP_REGION: us-central1                             # Your primary GCP region (e.g., us-central1)
+  CLOUD_RUN_SERVICE_NAME: visitor-counter             # Your Cloud Run service name (e.g., visitor-counter)
+  GCS_BUCKET_NAME: www.temitayoapata.online           # Your GCS bucket name for the frontend
 
 jobs:
   deploy:
@@ -26,7 +26,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' # <-- REPLACE THIS with your Cloud Run Python version
+          python-version: '3.11' # Ensure this matches your Cloud Run Python version
 
       - name: Install Python dependencies for tests
         run: |
@@ -38,27 +38,55 @@ jobs:
         run: |
           pytest counter_backend/ # Run tests in your backend directory
 
-      # --- GCP Deployment Steps (will only run if tests pass) ---
+      # --- GCP Authentication ---
       - name: Authenticate to Google Cloud
         id: auth
         uses: 'google-github-actions/auth@v2'
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }} # Uses the GitHub Secret
+          credentials_json: ${{ secrets.GCP_SA_KEY }} # Uses the GitHub Secret for your Service Account Key
 
       - name: Set up Google Cloud SDK
         uses: 'google-github-actions/setup-gcloud@v2'
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
 
-      - name: Deploy Cloud Run Service
+      # --- Build and Push Cloud Run Container Image ---
+      # This step builds your backend code into a Docker image and pushes it to GCR/Artifact Registry.
+      # Terraform will then use the tag of this image to deploy the Cloud Run service.
+      - name: Build and Push Cloud Run Image
+        id: build_image
         run: |
-          gcloud run deploy ${{ env.CLOUD_RUN_SERVICE_NAME }} \
-            --source counter_backend/ \
-            --region ${{ env.GCP_REGION }} \
-            --allow-unauthenticated
-          # If you have environment variables for your Cloud Run service, add them like this:
-          # --set-env-vars KEY1=VALUE1,KEY2=VALUE2
+          gcloud builds submit --tag gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.CLOUD_RUN_SERVICE_NAME }}:${{ github.sha }} counter_backend/
+          echo "IMAGE_TAG=gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.CLOUD_RUN_SERVICE_NAME }}:${{ github.sha }}" >> $GITHUB_ENV # Set env var for Terraform
 
+      # --- Terraform Setup and Apply ---
+      # These steps replace the manual 'gcloud run deploy' for the Cloud Run service creation/updates.
+      # Terraform will manage the Cloud Run service definition, Firestore, GCS bucket configuration, and IAM roles.
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.x # Use a specific stable version (e.g., 1.8.x, check HashiCorp releases)
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        working-directory: ./terraform # IMPORTANT: Ensure your .tf files are in a 'terraform' directory
+
+      - name: Terraform Apply
+        id: apply
+        run: |
+          terraform apply -auto-approve \
+            -input=false \
+            -var="gcp_project_id=${{ env.GCP_PROJECT_ID }}" \
+            -var="gcp_region=${{ env.GCP_REGION }}" \
+            -var="cloud_run_service_name=${{ env.CLOUD_RUN_SERVICE_NAME }}" \
+            -var="cloud_run_image_tag=${{ env.IMAGE_TAG }}" \ # Use the image tag from the build step
+            -var="gcs_bucket_name=${{ env.GCS_BUCKET_NAME }}" \
+            -var="gcs_bucket_location=US" \ # <<< IMPORTANT: MUST be a multi-region location (e.g., "US", "EUROPE", "ASIA")
+            -var="firestore_location=nam5" # <<< IMPORTANT: MUST be your Firestore database location ID (e.g., "nam5" for us-central1)
+        working-directory: ./terraform
+
+      # --- Frontend Sync to GCS (Terraform manages the bucket, gcloud manages file content) ---
       - name: Sync HTML Resume (Frontend) to GCS
         run: |
-          gcloud storage rsync . gs://www.temitayoapata.online --recursive
+          gcloud storage rsync . gs://${{ env.GCS_BUCKET_NAME }} --recursive
