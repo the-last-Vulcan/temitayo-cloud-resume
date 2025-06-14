@@ -23,20 +23,9 @@ def count_visitors():
     Each call increments the counter in the 'views' collection.
     Handles GET, POST, and OPTIONS (preflight) requests.
     """
-    # =====================================================================
-    # CRITICAL FIX: Handle OPTIONS (preflight) requests explicitly and early.
-    # Preflight requests should NOT interact with your backend logic/database.
-    # Flask-CORS handles the necessary headers automatically once this check passes.
-    # =====================================================================
-    if request.method == 'OPTIONS':
-        # For OPTIONS, just return a 200 OK or 204 No Content.
-        # Flask-CORS handles the required Access-Control-* headers.
-        return '', 200
-
-    # =====================================================================
-    # Original logic for GET/POST requests, which interacts with Firestore.
-    # This code will now only run for GET/POST requests, bypassing OPTIONS.
-    # =====================================================================
+    # NO EXPLICIT OPTIONS HANDLING HERE. Flask-CORS will handle it automatically
+    # because 'OPTIONS' is in the methods list for the route.
+   
     doc_ref = db.collection('views').document('counter')
     new_count = 0 # Initialize new_count for scope
 
