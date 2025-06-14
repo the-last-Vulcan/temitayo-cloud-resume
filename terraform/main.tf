@@ -125,4 +125,3 @@ resource "google_project_service" "artifact_registry_api" {
   disable_on_destroy = false
 }
 
-
