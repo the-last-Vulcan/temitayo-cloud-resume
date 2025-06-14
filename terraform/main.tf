@@ -18,13 +18,6 @@ resource "google_cloud_run_service" "visitor_counter_service" {
 
   template {
     spec {
-      containers {
-        image = "gcr.io/${var.gcp_project_id}/${var.cloud_run_service_name}:${var.cloud_run_image_tag}" # Image from GitHub Actions build
-        env {
-          name  = "PORT"
-          value = "8080"
-        }
-      }
       service_account_name = google_service_account.cloud_run_sa.email # Link to the SA defined below
     }
     metadata {
@@ -52,12 +45,12 @@ resource "google_cloud_run_service_iam_member" "visitor_counter_public_access" {
 
 
 # --- Firestore Database ---
-resource "google_firestore_database" "default_database" {
-  project     = var.gcp_project_id
-  name        = "(default)" # Use the default Firestore database
-  location_id = var.firestore_location # e.g., "nam5" for us-central1
-  type        = "FIRESTORE_NATIVE"
-}
+# resource "google_firestore_database" "default_database" {
+#   project     = var.gcp_project_id
+#   name        = "(default)" # Use the default Firestore database
+#   location_id = var.firestore_location # e.g., "nam5" for us-central1
+#   type        = "FIRESTORE_NATIVE"
+# }
 
 # --- Service Account for Cloud Run ---
 resource "google_service_account" "cloud_run_sa" {
@@ -101,11 +94,11 @@ resource "google_storage_bucket" "website_bucket" {
 }
 
 # Make the bucket publicly readable for static website hosting
-resource "google_storage_bucket_iam_member" "website_bucket_public_access" {
-  bucket = google_storage_bucket.website_bucket.name
-  role   = "roles/storage.objectViewer"
-  member = "allUsers"
-}
+# resource "google_storage_bucket_iam_member" "website_bucket_public_access" {
+#   bucket = google_storage_bucket.website_bucket.name
+#   role   = "roles/storage.objectViewer"
+#   member = "allUsers"
+# }
 
 # --- Enable necessary APIs (if not already enabled) ---
 resource "google_project_service" "cloud_run_api" {
