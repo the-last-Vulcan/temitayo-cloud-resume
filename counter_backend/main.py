@@ -23,9 +23,20 @@ def count_visitors():
     Each call increments the counter in the 'views' collection.
     Handles GET, POST, and OPTIONS (preflight) requests.
     """
-    # Flask-CORS extension handles the OPTIONS preflight request automatically.
-    # We no longer need the explicit 'if request.method == 'OPTIONS':' block here.
+    # =====================================================================
+    # CRITICAL FIX: Handle OPTIONS (preflight) requests explicitly and early.
+    # Preflight requests should NOT interact with your backend logic/database.
+    # Flask-CORS handles the necessary headers automatically once this check passes.
+    # =====================================================================
+    if request.method == 'OPTIONS':
+        # For OPTIONS, just return a 200 OK or 204 No Content.
+        # Flask-CORS handles the required Access-Control-* headers.
+        return '', 200
 
+    # =====================================================================
+    # Original logic for GET/POST requests, which interacts with Firestore.
+    # This code will now only run for GET/POST requests, bypassing OPTIONS.
+    # =====================================================================
     doc_ref = db.collection('views').document('counter')
     new_count = 0 # Initialize new_count for scope
 
@@ -49,8 +60,9 @@ def count_visitors():
     except Exception as e:
         # Log the error for debugging purposes (visible in Cloud Logging)
         print(f"An error occurred: {str(e)}")
-        # Return an error message to the frontend with HTTP 500 Internal Server Error
-        return jsonify({"error": "Failed to update visitor count"}), 500 # More generic error for frontend
+        # Return a generic error message to the frontend with HTTP 500 Internal Server Error
+        # Ensure we return a plain string error message, not the exception object itself.
+        return jsonify({"error": "Failed to update visitor count"}), 500
 
 
 # This block is crucial for running the Flask application as a web server.
