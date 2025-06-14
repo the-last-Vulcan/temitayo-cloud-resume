@@ -4,31 +4,41 @@ import pytest
 from unittest.mock import MagicMock, patch
 import json
 
-# IMPORTANT: We now import the Flask 'app' instance, not the 'count_visitors' function directly.
-# The `patch` for firestore.Client must happen before 'app' is imported if it's at module level in main.py
-# However, if using pytest fixtures with autouse, it can be handled there too.
-# For simplicity, we'll ensure the patch is active when 'app' is loaded.
+# =========================================================================
+# CRITICAL FIX: Patch google.cloud.firestore.Client *BEFORE* importing 'main.py'
+# This ensures that when 'db = firestore.Client()' runs in main.py,
+# it receives a mocked client instead of trying to authenticate,
+# thus preventing the DefaultCredentialsError during test collection.
+# =========================================================================
+with patch('google.cloud.firestore.Client') as mock_firestore_client_on_import:
+    # Configure the initial mock return for when the client is instantiated
+    mock_db_instance = MagicMock()
+    mock_firestore_client_on_import.return_value = mock_db_instance
 
-# Mock the Firestore client using a pytest fixture
-@pytest.fixture(autouse=True) # autouse=True means this fixture runs for every test
-def mock_firestore_db():
-    # Patch google.cloud.firestore.Client when it's imported by 'main' module
-    with patch('google.cloud.firestore.Client') as mock_client:
-        mock_db = MagicMock()
-        mock_client.return_value = mock_db
+    # Now import the app; firestore.Client() in main.py will use the mock
+    from main import app
+    # No need to import specific functions like count_visitors anymore, as we use app.test_client()
 
-        # Mock commonly used methods on the client
-        mock_collection_ref = MagicMock()
-        mock_document_ref = MagicMock()
+# =========================================================================
+# This fixture will be used by pytest (autouse=True) to ensure a clean
+# mock state for the Firestore client instance for each individual test.
+# =========================================================================
+@pytest.fixture(autouse=True)
+def mock_firestore_db(mock_firestore_client_on_import):
+    # Reset the mock_db_instance for each test to ensure clean state
+    # This clears call counts and reset any side effects from previous tests
+    mock_db_instance.reset_mock()
 
-        mock_db.collection.return_value = mock_collection_ref
-        mock_collection_ref.document.return_value = mock_document_ref
+    # Re-mock commonly used methods on the client for each test's fresh state
+    mock_collection_ref = MagicMock()
+    mock_document_ref = MagicMock()
 
-        # Yield the mocked db instance so tests can configure it
-        yield mock_db
+    mock_db_instance.collection.return_value = mock_collection_ref
+    mock_collection_ref.document.return_value = mock_document_ref
 
-# Import the Flask app AFTER the patch setup, to ensure it uses the mocked Firestore client
-from main import app # This imports your Flask app instance
+    # Yield the mock_db_instance for tests to configure specific behaviors (e.g., get.return_value)
+    yield mock_db_instance
+
 
 # Test case for OPTIONS (preflight) request
 def test_options_request():
@@ -39,7 +49,9 @@ def test_options_request():
         assert response.data == b'' # Empty body for OPTIONS
         assert 'Access-Control-Allow-Origin' in response.headers
         assert response.headers['Access-Control-Allow-Origin'] == '*' # Or your specific domain
+        assert 'Access-Control-Allow-Methods' in response.headers
         assert response.headers['Access-Control-Allow-Methods'] == 'GET, POST, OPTIONS'
+        assert 'Access-Control-Allow-Headers' in response.headers
         assert response.headers['Access-Control-Allow-Headers'] == 'Content-Type'
         assert 'Access-Control-Max-Age' in response.headers
 
@@ -55,7 +67,7 @@ def test_new_visitor(mock_firestore_db):
 
         assert response.status_code == 200
         assert response.headers['Content-Type'] == 'application/json'
-        
+
         # Verify response data
         data = response.json # Flask's response object has a .json property for JSON data
         assert data['count'] == 1
@@ -91,18 +103,18 @@ def test_existing_visitor(mock_firestore_db):
 def test_error_handling(mock_firestore_db, capsys):
     # Simulate an exception when trying to get the document
     mock_doc_ref = mock_firestore_db.collection.return_value.document.return_value
-    mock_doc_ref.get.side_effect = Exception("Firestore connection error")
+    mock_doc_ref.get.side_effect = Exception("Simulated Firestore connection error")
 
     with app.test_client() as client:
         response = client.get('/')
 
         assert response.status_code == 500
         assert response.headers['Content-Type'] == 'application/json'
-        
+
         data = response.json
         assert "error" in data
-        assert data['error'] == "Failed to update visitor count" # Check the generic error message
+        assert data['error'] == "Failed to update visitor count" # Check the generic error message from main.py
 
         # Verify that the error was printed to stdout (captured by capsys)
         captured = capsys.readouterr()
-        assert "An error occurred: Firestore connection error" in captured.out
+        assert "An error occurred: Simulated Firestore connection error" in captured.out
