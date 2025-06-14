@@ -4,29 +4,32 @@ import pytest
 from unittest.mock import MagicMock, patch
 import json
 
+# Global variable to hold the mocked Firestore client instance
+# This will be initialized by the patch block below and then used by the fixture.
+mock_db_instance = None
+app = None # Initialize app as None, to be set by the patch block
+
 # =========================================================================
 # CRITICAL FIX: Patch google.cloud.firestore.Client *BEFORE* importing 'main.py'
 # This ensures that when 'db = firestore.Client()' runs in main.py,
-# it receives a mocked client instead of trying to authenticate,
-# thus preventing the DefaultCredentialsError during test collection.
+# it receives a mocked client instead of trying to authenticate.
 # =========================================================================
-with patch('google.cloud.firestore.Client') as mock_firestore_client_on_import:
-    # Configure the initial mock return for when the client is instantiated
+with patch('google.cloud.firestore.Client') as MockFirestoreClient:
+    # Initialize the global mock_db_instance here
     mock_db_instance = MagicMock()
-    mock_firestore_client_on_import.return_value = mock_db_instance
+    MockFirestoreClient.return_value = mock_db_instance
 
     # Now import the app; firestore.Client() in main.py will use the mock
-    from main import app
-    # No need to import specific functions like count_visitors anymore, as we use app.test_client()
+    from main import app # Assign to the global app variable
+
 
 # =========================================================================
-# This fixture will be used by pytest (autouse=True) to ensure a clean
-# mock state for the Firestore client instance for each individual test.
+# This fixture will ensure a clean mock state for the Firestore client
+# for each individual test, referring to the global mock_db_instance.
 # =========================================================================
 @pytest.fixture(autouse=True)
-def mock_firestore_db(mock_firestore_client_on_import):
+def mock_firestore_db():
     # Reset the mock_db_instance for each test to ensure clean state
-    # This clears call counts and reset any side effects from previous tests
     mock_db_instance.reset_mock()
 
     # Re-mock commonly used methods on the client for each test's fresh state
@@ -36,7 +39,7 @@ def mock_firestore_db(mock_firestore_client_on_import):
     mock_db_instance.collection.return_value = mock_collection_ref
     mock_collection_ref.document.return_value = mock_document_ref
 
-    # Yield the mock_db_instance for tests to configure specific behaviors (e.g., get.return_value)
+    # Yield the global mock_db_instance for tests to use
     yield mock_db_instance
 
 
