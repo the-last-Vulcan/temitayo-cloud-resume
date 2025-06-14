@@ -19,6 +19,10 @@ resource "google_cloud_run_service" "visitor_counter_service" {
   template {
     spec {
       service_account_name = google_service_account.cloud_run_sa.email # Link to the SA defined below
+      containers {
+        image = "gcr.io/${var.gcp_project_id}/${var.cloud_run_service_name}:${var.cloud_run_image_tag}"
+        # No 'env' block for PORT here anymore!
+      }
     }
     metadata {
       annotations = {
@@ -82,16 +86,16 @@ resource "google_project_iam_member" "cloud_run_service_usage_consumer" {
 
 # --- Google Cloud Storage Bucket for Frontend ---
 # This assumes your bucket is named after your domain, e.g., www.temitayoapata.online
-resource "google_storage_bucket" "website_bucket" {
-  name          = var.gcs_bucket_name
-  location      = var.gcs_bucket_location # Must be multi-region for static website hosting (e.g., "US")
-  uniform_bucket_level_access = true # Recommended for security
+# resource "google_storage_bucket" "website_bucket" {
+#   name          = var.gcs_bucket_name
+#   location      = var.gcs_bucket_location # Must be multi-region for static website hosting (e.g., "US")
+#   uniform_bucket_level_access = true # Recommended for security
 
-  website {
-    main_page_suffix = "index.html"
-    not_found_page   = "404.html" # Optional, define your 404 page
-  }
-}
+#   website {
+#     main_page_suffix = "index.html"
+#     not_found_page   = "404.html" # Optional, define your 404 page
+#   }
+# }
 
 # Make the bucket publicly readable for static website hosting
 # resource "google_storage_bucket_iam_member" "website_bucket_public_access" {
