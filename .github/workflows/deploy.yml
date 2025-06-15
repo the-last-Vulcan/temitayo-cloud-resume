@@ -31,19 +31,19 @@ jobs:
       - name: Install Python dependencies for tests
         run: |
           python -m pip install --upgrade pip
-          pip install -r counter_backend/requirements.txt # Install dependencies for your backend code
-          pip install pytest # Install pytest for running tests
+          pip install -r counter_backend/requirements.txt
+          pip install pytest
 
       - name: Run unit tests
         run: |
-          pytest counter_backend/ # Run tests in your backend directory
+          pytest counter_backend/
 
       # --- GCP Authentication ---
       - name: Authenticate to Google Cloud
         id: auth
         uses: 'google-github-actions/auth@v2'
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }} # Uses the GitHub Secret for your Service Account Key
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Set up Google Cloud SDK
         uses: 'google-github-actions/setup-gcloud@v2'
@@ -51,45 +51,29 @@ jobs:
           project_id: ${{ env.GCP_PROJECT_ID }}
 
       # --- Build and Push Cloud Run Container Image ---
-      # This step builds your backend code into a Docker image and pushes it to GCR/Artifact Registry.
-      # Terraform will then use the tag of this image to deploy the Cloud Run service.
       - name: Build and Push Cloud Run Image
         id: build_image
         run: |
           gcloud builds submit --tag gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.CLOUD_RUN_SERVICE_NAME }}:${{ github.sha }} counter_backend/
-          echo "IMAGE_TAG=gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.CLOUD_RUN_SERVICE_NAME }}:${{ github.sha }}" >> $GITHUB_ENV # Set env var for Terraform
+          echo "IMAGE_TAG=gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.CLOUD_RUN_SERVICE_NAME }}:${{ github.sha }}" >> $GITHUB_ENV
 
       # --- Terraform Setup and Apply ---
-      # These steps replace the manual 'gcloud run deploy' for the Cloud Run service creation/updates.
-      # Terraform will manage the Cloud Run service definition, Firestore, GCS bucket configuration, and IAM roles.
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.8.x # Use a specific stable version (e.g., 1.8.x, check HashiCorp releases)
+          terraform_version: 1.8.x
 
       - name: Terraform Init
         id: init
         run: terraform init
-        working-directory: ./terraform # IMPORTANT: Ensure your .tf files are in a 'terraform' directory
+        working-directory: ./terraform
 
       - name: Terraform Apply
         id: apply
-        run: |
-          terraform apply -auto-approve 
-            -input=false \
-            -var="gcp_project_id=${{ env.GCP_PROJECT_ID }}" \
-            -var="gcp_region=${{ env.GCP_REGION }}" \
-            -var="cloud_run_service_name=${{ env.CLOUD_RUN_SERVICE_NAME }}" \
-            -var="cloud_run_image_tag=${{ env.IMAGE_TAG }}" \ 
-            -var="gcs_bucket_name=${{ env.GCS_BUCKET_NAME }}" \
-            -var="gcs_bucket_location=US" \ 
-            -var="firestore_location=nam5" 
+        run: terraform apply -auto-approve -input=false -var="gcp_project_id=${{ env.GCP_PROJECT_ID }}" -var="gcp_region=${{ env.GCP_REGION }}" -var="cloud_run_service_name=${{ env.CLOUD_RUN_SERVICE_NAME }}" -var="cloud_run_image_tag=${{ env.IMAGE_TAG }}" -var="gcs_bucket_name=${{ env.GCS_BUCKET_NAME }}" -var="gcs_bucket_location=US" -var="firestore_location=nam5"
         working-directory: ./terraform
-          # Uses the latest image
-          # <<< IMPORTANT: MUST be a multi-region location (e.g., "US", "EUROPE", "ASIA")
-          # <<< IMPORTANT: MUST be your Firestore database location ID (e.g., "nam5" for us-central1)
 
-      # --- Frontend Sync to GCS (Terraform manages the bucket, gcloud manages file content) ---
+      # --- Frontend Sync to GCS ---
       - name: Sync HTML Resume (Frontend) to GCS
         run: |
           gcloud storage rsync . gs://${{ env.GCS_BUCKET_NAME }} --recursive
