@@ -94,4 +94,5 @@ jobs:
       # --- Frontend Sync to GCS (Terraform manages the bucket, gcloud manages file content) ---
       - name: Sync HTML Resume (Frontend) to GCS
         run: |
-          gcloud storage rsync . gs://${{ env.GCS_BUCKET_NAME }} --recursive
+          gcloud storage rsync . gs://${{ env.GCS_BUCKET_NAME }} --recursive --cache-control "no-cache, no-store, must-revalidate"
+        working-directory: ./
