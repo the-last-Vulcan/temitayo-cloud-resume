@@ -80,11 +80,14 @@ jobs:
             -var="gcp_project_id=${{ env.GCP_PROJECT_ID }}" \
             -var="gcp_region=${{ env.GCP_REGION }}" \
             -var="cloud_run_service_name=${{ env.CLOUD_RUN_SERVICE_NAME }}" \
-            -var="cloud_run_image_tag=${{ env.IMAGE_TAG }}" \ # Use the image tag from the build step
+            -var="cloud_run_image_tag=${{ env.IMAGE_TAG }}" \ 
             -var="gcs_bucket_name=${{ env.GCS_BUCKET_NAME }}" \
-            -var="gcs_bucket_location=US" \ # <<< IMPORTANT: MUST be a multi-region location (e.g., "US", "EUROPE", "ASIA")
-            -var="firestore_location=nam5" # <<< IMPORTANT: MUST be your Firestore database location ID (e.g., "nam5" for us-central1)
+            -var="gcs_bucket_location=US" \ 
+            -var="firestore_location=nam5" 
         working-directory: ./terraform
+          # Uses the latest image
+          # <<< IMPORTANT: MUST be a multi-region location (e.g., "US", "EUROPE", "ASIA")
+          # <<< IMPORTANT: MUST be your Firestore database location ID (e.g., "nam5" for us-central1)
 
       # --- Frontend Sync to GCS (Terraform manages the bucket, gcloud manages file content) ---
       - name: Sync HTML Resume (Frontend) to GCS
