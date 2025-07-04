@@ -137,11 +137,11 @@ footer {
 .scroll-button {
     background-color: #f39c12; /* A warm orange */
     color: #fff;
-    padding: 10px 20px;
+    padding: 8px 15px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 1em;
+    font-size: 0.9em;
     font-weight: bold;
     transition: background-color 0.3s ease, transform 0.2s ease;
     margin-bottom: 20px; /* Space below the button */
