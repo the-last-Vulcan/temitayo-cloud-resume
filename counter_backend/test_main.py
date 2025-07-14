@@ -52,7 +52,7 @@ def test_options_request():
 
         assert response.status_code == 200
         headers = response.headers
-        assert headers['Access-Control-Allow-Origin'] == '*'
+        assert headers['Access-Control-Allow-Origin'] == simulated_request_headers['Origin']
         assert headers['Access-Control-Allow-Methods'] == 'GET,HEAD,POST,OPTIONS'
         assert 'Access-Control-Allow-Headers' in headers
 
