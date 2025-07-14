@@ -30,18 +30,15 @@ def mock_firestore_db():
 
 # Updated CORS preflight OPTIONS test
 def test_options_request():
-    with app.test_client() as client:
+     with app.test_client() as client:
+        # First OPTIONS request without headers
         response = client.options('/')
-
         assert response.status_code == 200
-        assert response.data == b''  # Flask-CORS returns empty body for OPTIONS
-        headers = response.headers
+        assert response.data == b''
+        assert 'Access-Control-Allow-Origin' in response.headers
+        assert response.headers['Access-Control-Allow-Origin'] == '*'
 
-        assert 'Access-Control-Allow-Origin' in headers
-        assert headers['Access-Control-Allow-Origin'] == '*'
-
-        # Flask-CORS returns headers only if the request includes Origin and Access-Control headers.
-        # We simulate that below.
+        # Simulate real preflight request
         simulated_request_headers = {
             'Origin': 'http://example.com',
             'Access-Control-Request-Method': 'POST',
@@ -49,12 +46,18 @@ def test_options_request():
         }
 
         response = client.options('/', headers=simulated_request_headers)
-
         assert response.status_code == 200
         headers = response.headers
+
         assert headers['Access-Control-Allow-Origin'] == simulated_request_headers['Origin']
-        assert headers['Access-Control-Allow-Methods'] == 'GET,HEAD,POST,OPTIONS'
+
+        # ✅ Robust method comparison
+        expected_methods = {'GET', 'HEAD', 'POST', 'OPTIONS'}
+        returned_methods = set(m.strip() for m in headers['Access-Control-Allow-Methods'].split(','))
+        assert expected_methods == returned_methods
+
         assert 'Access-Control-Allow-Headers' in headers
+        assert 'Content-Type' in headers['Access-Control-Allow-Headers']
 
 
 def test_new_visitor(mock_firestore_db):
