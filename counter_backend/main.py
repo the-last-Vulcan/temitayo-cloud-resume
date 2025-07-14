@@ -12,7 +12,7 @@ app = Flask(__name__)
 # flask-cors will automatically handle preflight (OPTIONS) requests and add necessary CORS headers
 # to all responses from this Flask app.
 # For production, it's recommended to restrict 'origins' to your specific frontend domain(s) for security.
-CORS(app) # Simplified to let flask-cors handle all origins for now
+CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"]}})# lets flask-cors handle all origins for now
 
 # Initialize Firestore client
 # Creates a client object to interact with the Firestore database.
