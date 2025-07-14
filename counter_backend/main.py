@@ -1,50 +1,74 @@
-import json
-import os
-from google.cloud import firestore
-from flask import Flask, request, jsonify, make_response
-from flask_cors import CORS
+import json # Not directly used in this specific code, but common for API handling
+import os # Used to access environment variables like PORT
+from google.cloud import firestore # Imports the Firestore client library for database interaction
+from flask import Flask, request, jsonify, make_response # Imports Flask core components for web application development
+from flask_cors import CORS # Imports CORS extension for Flask to handle Cross-Origin Resource Sharing
 
 # Initialize Flask app
+# Creates an instance of the Flask web application.
 app = Flask(__name__)
 
 # Enable CORS - allow any origin for development
+# This allows web pages from any domain to make requests to this API.
+# For production, it's recommended to restrict 'origins' to your specific frontend domain(s) for security.
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Initialize Firestore client
+# Creates a client object to interact with the Firestore database.
+# The project ID is usually picked up automatically from the environment (e.g., Cloud Run).
 db = firestore.Client()
 
 @app.route('/', methods=['GET', 'POST', 'OPTIONS'])
+# Defines a route for the root URL ('/').
+# It accepts GET (to retrieve count), POST (to increment/update count), and OPTIONS (for CORS preflight) requests.
 def count_visitors():
-    # Explicitly handle OPTIONS (CORS preflight)
+    # Explicitly handle OPTIONS (CORS preflight) requests
+    # Browsers send an OPTIONS request before actual GET/POST requests if the origin differs.
+    # This checks what methods and headers are allowed.
     if request.method == 'OPTIONS':
-        response = make_response('', 200)
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-        response.headers['Access-Control-Max-Age'] = '3600'
-        return response
+        response = make_response('', 200) # Creates an empty response with a 200 OK status
+        # Sets headers required by CORS preflight:
+        response.headers['Access-Control-Allow-Origin'] = '*' # Allows any origin to access
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS' # Specifies allowed HTTP methods
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type' # Specifies allowed headers
+        response.headers['Access-Control-Max-Age'] = '3600' # Caches preflight response for 1 hour
+        return response # Returns the preflight response
 
+    # Defines a reference to a specific document in Firestore.
+    # It points to a document named 'counter' within the 'views' collection.
     doc_ref = db.collection('views').document('counter')
-    new_count = 0
+    new_count = 0 # Initializes a variable to hold the updated count
 
     try:
+        # Attempts to retrieve the 'counter' document from Firestore.
         doc = doc_ref.get()
         if doc.exists:
+            # If the document exists, get the current 'count' value. Defaults to 0 if 'count' field is missing.
             current_count = doc.to_dict().get("count", 0)
-            new_count = current_count + 1
+            new_count = current_count + 1 # Increment the count by 1
+            # Update the 'count' field in the existing Firestore document.
             doc_ref.update({"count": new_count})
         else:
+            # If the document does not exist (first visitor), set the count to 1.
             new_count = 1
+            # Create the 'counter' document with the initial count.
             doc_ref.set({"count": new_count})
 
+        # Returns the new count as a JSON response with a 200 OK status.
         return jsonify({"count": new_count}), 200
 
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        # Catches any exceptions that occur during the Firestore operation.
+        print(f"An error occurred: {str(e)}") # Prints the error to the console (useful for Cloud Run logs)
+        # Returns an error message as JSON with a 500 Internal Server Error status.
         return jsonify({"error": "Failed to update visitor count"}), 500
 
-
+# This block ensures the Flask app runs only when the script is executed directly.
 if __name__ == '__main__':
+    # Gets the port from the environment variable 'PORT' (set by Cloud Run), defaulting to 8080.
     port = int(os.environ.get("PORT", 8080))
+    # Runs the Flask application.
+    # debug=False: Disables debug mode for production (important for security and performance).
+    # host="0.0.0.0": Makes the server accessible from any IP, necessary for Cloud Run.
+    # port=port: Uses the port specified by the environment variable.
     app.run(debug=False, host="0.0.0.0", port=port)
-
