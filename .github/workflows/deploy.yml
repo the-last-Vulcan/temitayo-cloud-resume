@@ -61,16 +61,15 @@ jobs:
       # BUILD & PUSH BACKEND IMAGE (WITH COMMIT SHA TAG)
       # -----------------------------------------------
 
-      - name: Build and Push Cloud Run Image with SHA tag
+      - name: Build and Push Cloud Run Image
         id: build_image
         run: |
-          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)   # Get short version of Git commit hash
-          IMAGE_TAG="gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.CLOUD_RUN_SERVICE_NAME }}:${SHORT_SHA}"  # Construct Docker image tag
-          echo "Using image tag: $IMAGE_TAG"
+            # Build and push the image
+            gcloud builds submit --tag "gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.CLOUD_RUN_SERVICE_NAME }}:${{ github.sha }}" counter_backend/
+    
+      # Set IMAGE_TAG to only the SHA, not the full image URL
+            echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
 
-          gcloud builds submit counter_backend/ --tag "$IMAGE_TAG"  # Build and push image to Artifact Registry
-
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV  # Save tag as an environment variable for Terraform
 
       # ------------------------
       # DEPLOY INFRA WITH TERRAFORM

@@ -20,7 +20,7 @@ firestore_location = "nam5" # REPLACE THIS with the correct Firestore location f
 # This will be the full tag from your Google Container Registry, e.g.,
 # "gcr.io/your-project-id/visitor-counter:f376aeae01c2e268770ac9aafeba6df6ef2764fb"
 # You'll get this from your Cloud Build output (it's the `:f376aeae01c2e268770ac9aafeba6df6ef2764fb` part from your last build tag).
-cloud_run_image_tag = "latest" # REPLACE THIS with the actual tag from your successful Cloud Build
+#cloud_run_image_tag = "latest" # REPLACE THIS with the actual tag from your successful Cloud Build
 
 # The name of the GCS bucket for your website's static files.
 # This name MUST BE GLOBALLY UNIQUE across all of Google Cloud.
