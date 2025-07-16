@@ -3,12 +3,6 @@
 # Terraform backend configuration for remote state in GCS
 # This bucket MUST be created manually beforehand (e.g., in the GCP Console).
 # Replace "eng-diagram-435207-s6-tfstate" with the actual name of your state bucket.
-terraform {
-  backend "gcs" {
-    bucket = "eng-diagram-435207-s6-tfstate" # Replace with the ACTUAL name of your state bucket (e.g., your-project-id-tfstate)
-    prefix = "terraform/state" # Optional: A path within the bucket to store state files, useful for multiple configurations
-  }
-}
 
 # Configure the Google Cloud provider
 provider "google" {
