@@ -11,6 +11,9 @@ All infrastructure (Cloud Run, IAM, APIs, etc.) is managed using Terraform, and 
 
 ---
 
+High-Level Architecture
+
+```mermaid
 flowchart TD
     subgraph UserSide["User Browser"]
       BHTML[Static Resume: HTML / CSS / JS]
