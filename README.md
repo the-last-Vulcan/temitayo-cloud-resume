@@ -11,7 +11,6 @@ All infrastructure (Cloud Run, IAM, APIs, etc.) is managed using Terraform, and 
 
 ---
 
-```mermaid
 flowchart TD
     subgraph UserSide["User Browser"]
       BHTML[Static Resume: HTML / CSS / JS]
@@ -45,10 +44,10 @@ flowchart TD
     %% Notes
     note over API,DB: "Cloud Run SA with roles/datastore.user"
     note over BHTML,API: "CORS allow origin www.temitayoapata.online"
-```
+
 
 CI/CD Workflow
-```mermaid
+
 flowchart LR
     GH[GitHub: Repo (main)] --> GA[GitHub Actions: deploy.yml]
     GA --> Tests[Run Pytest]
@@ -67,7 +66,7 @@ flowchart LR
     Users[End Users] -->|DNS/HTTPS| CF[Cloudflare] --> GCSbkt
     Users -. "JS fetch" .-> CR
     CR --> Firestore[(Firestore DB)]
-```
+
 
 ASCII Fallback (For environments without Mermaid)
 Architecture Overview:
