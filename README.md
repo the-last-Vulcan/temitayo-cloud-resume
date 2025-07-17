@@ -69,18 +69,3 @@ flowchart LR
     Users[End Users] -->|DNS/HTTPS| CF[Cloudflare] --> GCSbkt
     Users -. "JS fetch" .-> CR
     CR --> Firestore[(Firestore DB)]
-
-
-ASCII Fallback (For environments without Mermaid)
-Architecture Overview:
-
- End User -> Cloudflare (DNS/CDN) -> GCS Bucket (Static HTML/CSS/JS)
-            | JS Fetch |
-            v
-        Cloud Run (Flask API) -> Firestore (Visitor Count)
-CI/CD Overview:
-
-
- GitHub -> GitHub Actions (Pytest -> Build Image -> Push to GCR)
-            -> Terraform Apply (Update Cloud Run, Firestore, IAM)
-            -> gcloud rsync (Upload Frontend to GCS)
