@@ -14,7 +14,7 @@ gcp_region = "us-central1" # REPLACE THIS with your desired GCP region
 # This should correspond to your chosen `gcp_region`.
 # Examples: "nam5" for us-central1, "eur3" for europe-west1, "asia-northeast1" for asia-northeast1.
 # Firestore locations are specific; check Firestore documentation for exact mapping.
-firestore_location = "nam5" # REPLACE THIS with the correct Firestore location for your chosen region
+firestore_location = "us-central1" # REPLACE THIS with the correct Firestore location for your chosen region
 
 # The tag of the container image for your Cloud Run service.
 # This will be the full tag from your Google Container Registry, e.g.,
@@ -30,7 +30,7 @@ gcs_bucket_name = "www.temitayoapata.online" # REPLACE THIS with your desired, g
 # The location for your GCS bucket.
 # For static websites, it's recommended to use a multi-region location for high availability.
 # Examples: "US" (for multi-region in the US), "EUROPE", "ASIA".
-gcs_bucket_location = "US" # REPLACE THIS with your desired multi-region location
+gcs_bucket_location = "US-CENTRAL1" # REPLACE THIS with your desired multi-region location
 
 # Variables with default values (you only need to uncomment and change if you want to override the default)
 # cloud_run_service_name       = "visitor-counter"
