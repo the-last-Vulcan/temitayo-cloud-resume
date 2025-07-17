@@ -3,6 +3,7 @@ Static resume content is stored in a public GCS bucket and served behind Cloudfl
 The page loads JavaScript that calls a Cloud Run–hosted Flask API to increment and return a visitor count stored in Firestore.
 All infrastructure (Cloud Run, IAM, APIs, etc.) is managed using Terraform, and CI/CD is automated through GitHub Actions and Cloud Build.
 
+```mermaid
 flowchart TD
     subgraph UserSide["User Browser"]
       BHTML[Static Resume<br/>HTML/CSS/JS]
@@ -36,8 +37,8 @@ flowchart TD
     %% Notes
     note over API,DB: Cloud Run SA w/ roles/datastore.user
     note over BHTML,API: CORS allow origin www.temitayoapata.online
-
-
+```
+```mermaid
 flowchart LR
     GH[GitHub<br/>Repo (main)] --> GA[GitHub Actions<br/>deploy.yml]
     GA --> Tests[Run Pytest]
@@ -56,3 +57,4 @@ flowchart LR
     Users[End Users] -->|DNS/HTTPS| CF[Cloudflare] --> GCSbkt
     Users -.JS fetch.-> CR
     CR --> Firestore[(Firestore)]
+```
