@@ -103,3 +103,23 @@ jobs:
         run: |
           gcloud storage rsync . gs://${{ env.GCS_BUCKET_NAME }} --recursive --cache-control "no-cache, no-store, must-revalidate"
         working-directory: ./ # Sync all files in the root directory to GCS bucket
+
+
+       # ---------------------------------
+      # PURGE CLOUDFLARE CACHE (NEW STEP)
+      # ---------------------------------
+
+      - name: Purge Cloudflare Cache
+        if: success() # Only run if previous steps succeeded
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ env.CLOUDFLARE_ZONE_ID }}/purge_cache" \
+               -H "Authorization: Bearer ${{ env.CLOUDFLARE_API_TOKEN }}" \
+               -H "Content-Type: application/json" \
+               --data '{"purge_everything":true}'  
+               
+               # Send a POST request to Cloudflare API to purge all cache for the zone
+               # This command requires curl and the Cloudflare API Token and Zone ID
