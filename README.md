@@ -14,12 +14,11 @@ High-Level Architecture
 
 ```mermaid
 flowchart TD;
-    User --> Cloudflare;
-    Cloudflare --> GCS[Static Website];
-    User --> API[Cloud Run Flask API];
-    API --> Firestore;
+    User["User Browser"] -->|HTTPS Request| Cloudflare;
+    Cloudflare -->|Fetch static site| GCS[Static Website in GCS];
+    User -->|AJAX call| API[Cloud Run Flask API];
+    API -->|Read/Write count| Firestore[(Firestore Database)];
 ```
-
 CI/CD Workflow
 ```mermaid
 flowchart LR;
