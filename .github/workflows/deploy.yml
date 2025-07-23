@@ -50,8 +50,11 @@ jobs:
         id: auth
         uses: google-github-actions/auth@v2 # GitHub Action to auth with GCP via OIDC
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }} # Use GitHub Secret with GCP SA credentials
-          temp_resource_storage: eng-diagram-435207-s6-tfstate # Specify the GCS bucket for temporary credential storage
+          #credentials_json: {{ secrets.GCP_SA_KEY }} # Use GitHub Secret with GCP SA credentials
+          #temp_resource_storage: eng-diagram-435207-s6-tfstate # Specify the GCS bucket for temporary credential storage
+          token_format: access_token
+          workload_identity_provider: "projects/454149918840/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider"
+          service_account: github-actions-deployer@eng-diagram-435207-s6.iam.gserviceaccount.com
 
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2 # Installs gcloud CLI
