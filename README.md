@@ -6,6 +6,7 @@ This project implements the [Google Cloud Resume Challenge](https://cloudresumec
 - **Infrastructure as Code:** Managed via **Terraform**.  
 - **CI/CD:** Automated with **GitHub Actions** and **Google Cloud Build** for container builds.  
 
+![Architecture](images/architecture.png)
 
 High-Level Architecture
 
