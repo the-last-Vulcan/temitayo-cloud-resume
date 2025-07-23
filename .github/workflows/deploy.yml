@@ -105,8 +105,8 @@ jobs:
 
       - name: Sync HTML Resume (Frontend) to GCS
         run: |
-          gcloud storage rsync . gs://${{ env.GCS_BUCKET_NAME }} --recursive --cache-control "no-cache, no-store, must-revalidate"
-        working-directory: ./ # Sync all files in the root directory to GCS bucket
+          gcloud storage rsync frontend/ gs://${{ env.GCS_BUCKET_NAME }} --recursive --cache-control "no-cache, no-store, must-revalidate"
+        working-directory: ./ # Sync all files in the frontend directory to GCS bucket
 
 
        # ---------------------------------
