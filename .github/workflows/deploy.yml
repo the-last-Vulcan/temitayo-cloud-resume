@@ -1,0 +1,129 @@
+name: Deploy Cloud Resume Challenge # Name of the GitHub Actions workflow
+
+on:
+  push:
+    branches:
+      - main # Trigger workflow only on push to the main branch
+
+# Define shared environment variables accessible throughout the workflow
+env:
+  GCP_PROJECT_ID: eng-diagram-435207-s6 # Your GCP Project ID
+  GCP_REGION: us-central1 # Region for GCP resources
+  CLOUD_RUN_SERVICE_NAME: visitor-counter # Name of your Cloud Run service
+  GCS_BUCKET_NAME: www.temitayoapata.online # Name of your GCS bucket for static frontend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # GitHub-hosted runner to execute the job
+    permissions:
+      contents: 'read' # Allow reading repo contents
+      id-token: 'write' # Required for Workload Identity Federation to GCP
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4 # Clone your repo into the GitHub runner
+
+      # ------------------------
+      # RUN UNIT TESTS (Python)
+      # ------------------------
+
+      - name: Set up Python
+        uses: actions/setup-python@v5 # Set up Python runtime
+        with:
+          python-version: '3.11' # Match your Cloud Run Python version
+
+      - name: Install Python dependencies for tests
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r counter_backend/requirements.txt # Install backend dependencies
+          pip install pytest # Install Pytest for testing
+
+      - name: Run unit tests
+        run: |
+          pytest counter_backend/ # Run tests on your backend code
+
+      # ------------------------
+      # AUTHENTICATE WITH GCP
+      # ------------------------
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2 # GitHub Action to auth with GCP via OIDC
+        with:
+          #credentials_json: {{ secrets.GCP_SA_KEY }} # Use GitHub Secret with GCP SA credentials
+          #temp_resource_storage: eng-diagram-435207-s6-tfstate # Specify the GCS bucket for temporary credential storage
+          token_format: access_token
+          workload_identity_provider: "projects/454149918840/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider"
+          service_account: github-actions-deployer@eng-diagram-435207-s6.iam.gserviceaccount.com
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2 # Installs gcloud CLI
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      # -----------------------------------------------
+      # BUILD & PUSH BACKEND IMAGE (WITH COMMIT SHA TAG)
+      # -----------------------------------------------
+
+      - name: Build and Push Cloud Run Image
+        id: build_image
+        run: |
+          # Build and push the image
+          gcloud builds submit --tag "gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.CLOUD_RUN_SERVICE_NAME }}:${{ github.sha }}" counter_backend/
+
+          # Set IMAGE_TAG to only the SHA, not the full image URL
+          echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
+
+
+      # ------------------------
+      # DEPLOY INFRA WITH TERRAFORM
+      # ------------------------
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3 # Install Terraform
+        with:
+          terraform_version: 1.8.x
+
+      - name: Terraform Init
+        id: init
+        run: terraform init # Initialize Terraform backend and modules
+        working-directory: ./terraform # Target Terraform config directory
+
+      - name: Terraform Apply
+        id: apply
+        run: |
+          terraform apply -auto-approve \
+            -input=false \
+            -var-file="terraform.tfvars" \
+            -var="cloud_run_image_tag=${{ env.IMAGE_TAG }}"   # Override dynamic tag from GitHub Actions
+        working-directory: ./terraform # Run inside the terraform directory
+
+
+      # ------------------------
+      # SYNC FRONTEND TO GCS
+      # ------------------------
+
+      - name: Sync HTML Resume (Frontend) to GCS
+        run: |
+          gcloud storage rsync frontend/ gs://${{ env.GCS_BUCKET_NAME }} --recursive --cache-control "no-cache, no-store, must-revalidate"
+        working-directory: ./ # Sync all files in the frontend directory to GCS bucket
+
+
+       # ---------------------------------
+      # PURGE CLOUDFLARE CACHE (NEW STEP)
+      # ---------------------------------
+
+      - name: Purge Cloudflare Cache
+        if: success() # Only run if previous steps succeeded
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ env.CLOUDFLARE_ZONE_ID }}/purge_cache" \
+               -H "Authorization: Bearer ${{ env.CLOUDFLARE_API_TOKEN }}" \
+               -H "Content-Type: application/json" \
+               --data '{"purge_everything":true}'  
+               
+               # Send a POST request to Cloudflare API to purge all cache for the zone
+               # This command requires curl and the Cloudflare API Token and Zone ID

@@ -1,0 +1,6 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+terraform.tfvars # Keep this for local use, but don't commit if it has sensitive info
